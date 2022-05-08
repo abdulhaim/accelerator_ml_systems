@@ -957,10 +957,9 @@ class PRIMEDataset(tf.Module):
         tf_dataset[key].append(p[key])
 
     for key in self._active_training_keys + self._eval_metric_keys + self._validity_keys:
-      if key == 'infeasibility_reason':
-        continuetf_actual_dataset[key] = tf.convert_to_tensor(tf_dataset[key], tf.int32)
-      tf_dataset[key] = tf.convert_to_tensor(tf_dataset[key], tf.int32)
-    self._design_space_dict_copy = deepcopy(self._design_space_dict)
+        if key == 'infeasibility_reason':
+            continue
+        tf_dataset[key] = tf.convert_to_tensor(tf_dataset[key], tf.int32)
 
     # Now convert the dataset to actually use one-hot representations. This is
     # used for training, and so it is important to use this.
