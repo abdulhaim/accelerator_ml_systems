@@ -62,7 +62,7 @@ class SplitEmbeddingLayer(tf.keras.layers.Layer):
 
         # create layers
         self.dense_layers = []
-        print(self.softmax_splits)
+        # print(self.softmax_splits)
         for idx, val in enumerate(self.softmax_splits):
             self.dense_layers.append(
                 tf.keras.layers.Dense(
@@ -1307,18 +1307,6 @@ latency = []
 values = ['param_1', 'param_2', 'param_3', 'param_7', 'param_8', 'param_9', 'param_6', 'param_5', 'param_4', 'param_10', 'infeasible', 'runtime', 'area']
 for value in values:
   training_data_dict[value] = []
-
-# Parsing the whole dataset for an application may take 15-20 minutes.
-for p in parsed_dataset:
-  print(p)
-  if p['infeasible'] == 0:
-    number_of_feasibles+=1
-    training_data_dict
-    latency.append(p['runtime'])
-  else:
-    number_of_infeasibles+=1
-print(f'{number_of_infeasibles},{number_of_feasibles},{max(latency)},{min(latency)},{np.average(latency)}')
-
 
 #@title Running training
 
