@@ -939,49 +939,52 @@ class PRIMEDataset(tf.Module):
     return scores
 
   def _convert_to_tf_dataset(self, ):
-    """Convert the dataset to a tensorflow dataset, easy to read from."""
-    tf_dataset = {}
-    for key in self._active_training_keys + \
-               self._eval_metric_keys + self._validity_keys:
-      tf_dataset[key] = []
+      """Convert the dataset to a tensorflow dataset, easy to read from."""
+      tf_dataset = {}
+      for key in self._active_training_keys + \
+                 self._eval_metric_keys + self._validity_keys:
+          tf_dataset[key] = []
 
-    # Load the data from the data file. Note that most of the fields are
-    # actually not one-hots, and essentially corresponds to the original data
-    # with field-value pairs for each field, and the value is a discrete value.
-    tf_actual_dataset = {}
-    parsed_dataset = self.data_dict
-    for p in parsed_dataset:
-      for key in p:
-        if key not in tf_dataset:
-          continue
-        tf_dataset[key].append(p[key])
+      # Load the data from the data file. Note that most of the fields are
+      # actually not one-hots, and essentially corresponds to the original data
+      # with field-value pairs for each field, and the value is a discrete value.
+      parsed_dataset = self.data_dict
+      for p in parsed_dataset:
+          for key in p:
+              if key not in tf_dataset:
+                  continue
+              tf_dataset[key].append(p[key])
 
-    for key in self._active_training_keys + self._eval_metric_keys + self._validity_keys:
-        if key == 'infeasibility_reason':
-            continue
-        tf_dataset[key] = tf.convert_to_tensor(tf_dataset[key], tf.int32)
+      for key in self._active_training_keys + self._eval_metric_keys + self._validity_keys:
+          if key == 'infeasibility_reason':
+              continue
+          tf_dataset[key] = tf.convert_to_tensor(tf_dataset[key], tf.int32)
 
-    # Now convert the dataset to actually use one-hot representations. This is
-    # used for training, and so it is important to use this.
-    tf_actual_temp_dataset = {}
-    for key in self._active_training_keys:
-      design_space_map = dict(
-        self._design_space_dict[key]['mapping_one_hot_to_value'])
-      data_val = tf_actual_dataset[key].numpy().astype(np.int32).tolist()
-      out_vals = []
-      for x in data_val:
-        out_vals.append(design_space_map[x])
+      # Now convert the dataset to actually use one-hot representations. This is
+      # used for training, and so it is important to use this.
+      tf_actual_temp_dataset = {}
+      for key in self._active_training_keys + self._validity_keys + self._eval_metric_keys:
+          tf_actual_temp_dataset[key] = tf.cast(tf_dataset[key], dtype=tf.int32)
 
-      tf_actual_temp_dataset[key] = tf.constant(out_vals, dtype=tf.int32)
+      for key in self._active_training_keys:
+          design_space_map = dict(
+              self._design_space_dict[key]['mapping_one_hot_to_value'])
+          data_val = tf_actual_temp_dataset[key].numpy().astype(np.int32).tolist()
+          out_vals = []
+          for x in data_val:
+              out_vals.append(design_space_map[x])
 
-    ## Finally load the tf_actual_temp_dataset into the tf_dataset
-    for key in tf_actual_temp_dataset:
-      tf_actual_dataset[key] = tf_actual_temp_dataset[key]
+          tf_actual_temp_dataset[key] = tf.constant(out_vals, dtype=tf.int32)
 
-    self._tf_dataset = tf_actual_dataset
-    self._infeasible_np = self._tf_dataset['infeasible'].numpy().astype(
-      np.float32)
-    self._top = self._infeasible_np.shape[0]
+      ## Finally load the tf_actual_temp_dataset into the tf_dataset
+      tf_actual_dataset = {}
+      for key in tf_actual_temp_dataset:
+          tf_actual_dataset[key] = tf_actual_temp_dataset[key]
+
+      self._tf_dataset = tf_actual_dataset
+      self._infeasible_np = self._tf_dataset['infeasible'].numpy().astype(
+          np.float32)
+      self._top = self._infeasible_np.shape[0]
 
   def load_or_refresh_config(self):
     """Load config file with specifications."""
@@ -1280,7 +1283,7 @@ model_name = 'm4' #@param ["MobilenetEdgeTPU", "MobilenetV2", "MobilenetV3", "m4
 filenames = tf.io.gfile.glob(f'gs://gresearch/prime/{model_name}/*.tfrecord')
 raw_dataset = tf.data.TFRecordDataset(filenames, num_parallel_reads=64)
 parsed_dataset = raw_dataset.map(parse_prime_tfrecords)
-
+filenames = tf.io.gfile.glob(f'gs://gresearch/prime/{model_name}/*.tfrecord')
 
 config_str = """discrete:param_1:float64:true:1,2,4,6,8,10,12,14,16,32
 discrete:param_2:float64:true:1,2,4,6,8,10,12,14,16,32
